@@ -325,10 +325,10 @@ namespace hnswlib {
             std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> top_candidates;
             std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> candidate_set;
 
-			dist_t dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
-			dist_t lowerBound = dist;
-			top_candidates.emplace(dist, ep_id);
-			candidate_set.emplace(-dist, ep_id);
+            dist_t dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
+            dist_t lowerBound = dist;
+            top_candidates.emplace(dist, ep_id);
+            candidate_set.emplace(-dist, ep_id);
 
             visited_array[ep_id] = visited_array_tag;
 
