@@ -325,13 +325,10 @@ namespace hnswlib {
             std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> top_candidates;
             std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> candidate_set;
 
-            dist_t lowerBound;
-            if (!isMarkedDeleted(ep_id)) {
-                dist_t dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
-                lowerBound = dist;
-                top_candidates.emplace(dist, ep_id);
-                candidate_set.emplace(-dist, ep_id);
-            }
+			dist_t dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
+			dist_t lowerBound = dist;
+			top_candidates.emplace(dist, ep_id);
+			candidate_set.emplace(-dist, ep_id);
 
             visited_array[ep_id] = visited_array_tag;
 
@@ -362,8 +359,7 @@ namespace hnswlib {
                         if (top_candidates.size() < ef || lowerBound > dist) {
                             candidate_set.emplace(-dist, candidate_id);
 
-                            if (!isMarkedDeleted(candidate_id))
-                                top_candidates.emplace(dist, candidate_id);
+                            top_candidates.emplace(dist, candidate_id);
 
                             if (top_candidates.size() > ef)
                                 top_candidates.pop();
