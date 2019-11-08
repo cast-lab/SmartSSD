@@ -146,7 +146,7 @@ static size_t getCurrentRSS() {
 
 
 static void
-get_gt(unsigned int *massQA, unsigned char *massQ, unsigned char *mass, size_t vecsize, size_t qsize, L2SpaceI &l2space,
+get_gt(unsigned int *massQA, float *massQ, float *mass, size_t vecsize, size_t qsize, L2SpaceI &l2space,
        size_t vecdim, vector<std::priority_queue<std::pair<int, labeltype >>> &answers, size_t k) {
 
 
@@ -155,13 +155,13 @@ get_gt(unsigned int *massQA, unsigned char *massQ, unsigned char *mass, size_t v
     cout << qsize << "\n";
     for (int i = 0; i < qsize; i++) {
         for (int j = 0; j < k; j++) {
-            answers[i].emplace(0.0f, massQA[1000 * i + j]);
+            answers[i].emplace(0.0f, massQA[100 * i + j]);
         }
     }
 }
 
 static float
-test_approx(unsigned char *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<int> &appr_alg, size_t vecdim,
+test_approx(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<int> &appr_alg, size_t vecdim,
             vector<std::priority_queue<std::pair<int, labeltype >>> &answers, size_t k) {
     size_t correct = 0;
     size_t total = 0;
@@ -175,8 +175,6 @@ test_approx(unsigned char *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<
         total += gt.size();
 
         while (gt.size()) {
-
-
             g.insert(gt.top().second);
             gt.pop();
         }
@@ -195,7 +193,7 @@ test_approx(unsigned char *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<
 }
 
 static void
-test_vs_recall(unsigned char *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<int> &appr_alg, size_t vecdim,
+test_vs_recall(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<int> &appr_alg, size_t vecdim,
                vector<std::priority_queue<std::pair<int, labeltype >>> &answers, size_t k) {
     vector<size_t> efs;// = { 10,10,10,10,10 };
     for (int i = k; i < 30; i++) {
@@ -229,82 +227,96 @@ inline bool exists_test(const std::string &name) {
 
 
 void sift_test1B() {
+    int subset_size_milllions = 1;          //200;
+    int efConstruction = 40;                //controls index search speed/build speed tradeoff
+    int M = 16;                             //is tightly connected with internal dimensionality of the data. stongly affects the memory cosumption
+                                            //Higher M leads to higher accuracy/run_time at fixed ef/efconstruction
 
-	
-	int subset_size_milllions = 200;
-	int efConstruction = 40;
-	int M = 16;
-	
-
-    size_t vecsize = subset_size_milllions * 1000000;
+    size_t vecsize = subset_size_milllions * 10000;
 
     size_t qsize = 10000;
     size_t vecdim = 128;
     char path_index[1024];
     char path_gt[1024];
-    const char *path_q = "../Data/bigann_query.bvecs";
-	const char* path_data = "../Data/siftsmall_base.fvecs";
-	sprintf_s(path_index, "../Data/first_half.bin");
-	sprintf_s(path_gt, "../Data/siftsmall_groundtruth.ivecs");
 
-    unsigned char *massb = new unsigned char[vecdim];
+    const char* path_q = "../bigann/ANN_SIFT1M/sift_query.fvecs";
+    const char* path_data = "../bigann/ANN_SIFT1M/sift_base.fvecs";
+    sprintf_s(path_index, "../bigann/sift1b_%dm_ef_%d_M_%d.bin", subset_size_milllions, efConstruction, M);
+    sprintf_s(path_gt, "../bigann/ANN_SIFT1M/sift_groundtruth.ivecs");
+
+    float *massb = new float[vecdim];
 
     cout << "Loading GT:\n";
+    //-------------------------------------------------------------------------------------------------
+    // Loading File(path_gt) : "siftsmall_groundtruth.ivecs" :
+    // INFO :
+    //      - ivecs file : The groundtruth file in is .ivecs format
+    //      - Groundtruth: exhaustive search using exhaustive Euclidean squared distance calculation
+    //-------------------------------------------------------------------------------------------------
     ifstream inputGT(path_gt, ios::binary);
-    unsigned int *massQA = new unsigned int[qsize * 1000];
+    unsigned int *massQA = new unsigned int[qsize * 100];
     for (int i = 0; i < qsize; i++) {
         int t;
         inputGT.read((char *) &t, 4);
-        inputGT.read((char *) (massQA + 1000 * i), t * 4);
-        if (t != 1000) {
-            //cout << "err";
-            //return;
+        inputGT.read((char *) (massQA + 100 * i), t * 4);
+        // if you use big dataset(ANN_SIFT1B), you need to set "t !=1000"
+        if (t != 100) {
+            cout << "err";
+            return;
         }
     }
     inputGT.close();
-	
+
     cout << "Loading queries:\n";
-    unsigned char *massQ = new unsigned char[qsize * vecdim];
+    //-------------------------------------------------------------------------------------------------
+    // Loading File(path_q) : "siftsmall_query.fvecs" :
+    // INFO :
+    //      - fvecs file : The float vector files (Each vector takes 4+d*4 bytes)
+    //      - _query : query vectors
+    //-------------------------------------------------------------------------------------------------
     ifstream inputQ(path_q, ios::binary);
-
+    float* massQ = new float[qsize * vecdim];
     for (int i = 0; i < qsize; i++) {
-        int in = 0;
-        inputQ.read((char *) &in, 4);
-        if (in != 128) {
-            cout << "file error";
-            //exit(1);
+        int t;
+        inputQ.read((char*)&t, 4);
+        inputQ.read((char*)(massQ + vecdim * i), t * 4);
+        if (t != 128) {
+            cout << "err";
+            return;
         }
-        inputQ.read((char *) massb, in);
-        for (int j = 0; j < vecdim; j++) {
-            massQ[i * vecdim + j] = massb[j];
-        }
-
     }
     inputQ.close();
 
-
-    unsigned char *mass = new unsigned char[vecdim];
+    float *mass = new float[vecdim];
     ifstream input(path_data, ios::binary);
     int in = 0;
     L2SpaceI l2space(vecdim);
-
+    
     HierarchicalNSW<int> *appr_alg;
     if (exists_test(path_index)) {
+        //-------------------------------------------------------------------------------------------------
+        // Loading File (path_index) : "_sift1b_1m_ef_40_M_16.bin" : 
+        // INFO : 
+        //      - bin file : The vector Index files 
+        //-------------------------------------------------------------------------------------------------
         cout << "Loading index from " << path_index << ":\n";
         appr_alg = new HierarchicalNSW<int>(&l2space, path_index, false);
         cout << "Actual memory usage: " << getCurrentRSS() / 1000000 << " Mb \n";
     } else {
         cout << "Building index:\n";
         appr_alg = new HierarchicalNSW<int>(&l2space, vecsize, M, efConstruction);
-
-
-        input.read((char *) &in, 4);
+        //-------------------------------------------------------------------------------------------------
+        // Loading File (path_data) : "siftsmall_base.fvecs" :
+        // INFO :
+        //      - fvecs file : The vector files (Each vector takes 4+d*4 bytes)
+        //      - _base : the vectors in which the search is performed
+        //-------------------------------------------------------------------------------------------------
+        input.read((char*)&in, 4);
+        input.read((char*)(massb), in * 4);
         if (in != 128) {
-            cout << "file error";
-            exit(1);
-        }
-        input.read((char *) massb, in);
-
+                cout << "err";
+                return;
+            }
         for (int j = 0; j < vecdim; j++) {
             mass[j] = massb[j] * (1.0f);
         }
@@ -313,23 +325,23 @@ void sift_test1B() {
         int j1 = 0;
         StopW stopw = StopW();
         StopW stopw_full = StopW();
-        size_t report_every = 100000;
+        size_t report_every = 10000;
 #pragma omp parallel for
         for (int i = 1; i < vecsize; i++) {
-            unsigned char mass[128];
+            float mass[128];
             int j2=0;
 #pragma omp critical
             {
-
-                input.read((char *) &in, 4);
+                input.read((char*)&in, 4);
+                input.read((char*)(massb), in * 4);
                 if (in != 128) {
-                    cout << "file error";
-                    exit(1);
+                    cout << "err";
+                    return;
                 }
-                input.read((char *) massb, in);
                 for (int j = 0; j < vecdim; j++) {
-                    mass[j] = massb[j];
+                    mass[j] = massb[j] * (1.0f);
                 }
+
                 j1++;
                 j2=j1;
                 if (j1 % report_every == 0) {
@@ -340,14 +352,11 @@ void sift_test1B() {
                 }
             }
             appr_alg->addPoint((void *) (mass), (size_t) j2);
-
-
         }
         input.close();
         cout << "Build time:" << 1e-6 * stopw_full.getElapsedTimeMicro() << "  seconds\n";
         appr_alg->saveIndex(path_index);
     }
-
 
     vector<std::priority_queue<std::pair<int, labeltype >>> answers;
     size_t k = 1;
@@ -358,6 +367,5 @@ void sift_test1B() {
         test_vs_recall(massQ, vecsize, qsize, *appr_alg, vecdim, answers, k);
     cout << "Actual memory usage: " << getCurrentRSS() / 1000000 << " Mb \n";
     return;
-
 
 }
