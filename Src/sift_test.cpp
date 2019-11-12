@@ -47,7 +47,7 @@ void get_gt(float *mass, float *massQ, size_t vecsize, size_t qsize, L2Space &l2
     (vector<std::priority_queue<std::pair<float, labeltype >>>(qsize)).swap(answers);
     //answers.swap(vector<std::priority_queue< std::pair< float, labeltype >>>(qsize));
     for (int i = 0; i < qsize; i++) {
-        std::priority_queue<std::pair<float, labeltype >> gt = bs.searchKnn(massQ + vecdim * i, 10);
+        std::priority_queue<std::pair<float, labeltype >> gt = bs.searchKnn(massQ + vecdim * i, 10,0);
         answers[i] = gt;
     }
 }
@@ -76,7 +76,7 @@ float test_approx(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<fl
 //#pragma omp parallel for
     for (int i = 0; i < qsize; i++) {
 
-        std::priority_queue<std::pair<float, labeltype >> result = appr_alg.searchKnn(massQ + vecdim * i, 10);
+        std::priority_queue<std::pair<float, labeltype >> result = appr_alg.searchKnn(massQ + vecdim * i, 10,0);
         std::priority_queue<std::pair<float, labeltype >> gt(answers[i]);
         unordered_set<labeltype> g;
         total += gt.size();

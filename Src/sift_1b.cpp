@@ -162,7 +162,7 @@ get_gt(unsigned int *massQA, float *massQ, float *mass, size_t vecsize, size_t q
 
 static float
 test_approx(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<int> &appr_alg, size_t vecdim,
-            vector<std::priority_queue<std::pair<int, labeltype >>> &answers, size_t k) {
+            vector<std::priority_queue<std::pair<int, labeltype >>> &answers, size_t k, size_t HW) {
     size_t correct = 0;
     size_t total = 0;
     //uncomment to test in parallel mode:
@@ -209,7 +209,7 @@ test_vs_recall(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<int> 
         appr_alg.setEf(ef);
         StopW stopw = StopW();
 
-        float recall = test_approx(massQ, vecsize, qsize, appr_alg, vecdim, answers, k);
+        float recall = test_approx(massQ, vecsize, qsize, appr_alg, vecdim, answers, k, 0);
         float time_us_per_query = stopw.getElapsedTimeMicro() / qsize;
 
         cout << ef << "\t" << recall << "\t" << time_us_per_query << " us\n";
@@ -218,6 +218,34 @@ test_vs_recall(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<int> 
             break;
         }
     }
+}
+
+static void
+test_HW_recall(float* massQ, size_t vecsize, size_t qsize, HierarchicalNSW<int>& appr_alg, size_t vecdim,
+	vector<std::priority_queue<std::pair<int, labeltype >>>& answers, size_t k) {
+	vector<size_t> efs;// = { 10,10,10,10,10 };
+
+	for (int i = 0; i < 50; i += 10) {
+		efs.push_back(i);
+	}
+	for (size_t ef : efs) {
+		appr_alg.setEf(ef);
+		StopW stopw = StopW();
+
+		float recall = test_approx(massQ, vecsize, qsize, appr_alg, vecdim, answers, k, 0);
+		float time_us_per_query = stopw.getElapsedTimeMicro() / qsize;
+		cout << ef << "\t" << recall << "\t" << time_us_per_query << " us\n";
+
+		stopw = StopW();
+		float recall_hw = test_approx(massQ, vecsize, qsize, appr_alg, vecdim, answers, k, 1);
+		time_us_per_query = stopw.getElapsedTimeMicro() / qsize;
+		cout << ef << " HW\t" << recall_hw << "\t" << time_us_per_query << " us\n";
+
+		if (recall != recall_hw) {
+			cout << "HW Error!!\n";
+			break;
+		}
+	}
 }
 
 inline bool exists_test(const std::string &name) {
@@ -363,8 +391,14 @@ void sift_test1B() {
     cout << "Parsing gt:\n";
     get_gt(massQA, massQ, mass, vecsize, qsize, l2space, vecdim, answers, k);
     cout << "Loaded gt\n";
+
+#if 0
     for (int i = 0; i < 1; i++)
         test_vs_recall(massQ, vecsize, qsize, *appr_alg, vecdim, answers, k);
+#else
+	test_HW_recall(massQ, vecsize, qsize, *appr_alg, vecdim, answers, k);
+#endif
+
     cout << "Actual memory usage: " << getCurrentRSS() / 1000000 << " Mb \n";
     return;
 

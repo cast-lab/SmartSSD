@@ -946,7 +946,7 @@ namespace hnswlib {
             return cur_c;
         };
 
-        std::priority_queue<std::pair<dist_t, labeltype >> searchKnn(const void *query_data, size_t k) const {
+        std::priority_queue<std::pair<dist_t, labeltype >> searchKnn(const void *query_data, size_t k, size_t HW) const {
             tableint currObj = enterpoint_node_;
             dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
 
@@ -981,8 +981,12 @@ namespace hnswlib {
                 top_candidates.swap(top_candidates1);
             }
             else{
-                std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> top_candidates1=searchBaseLayerST_K<false>(
-                        currObj, query_data, std::max(ef_, k));
+				std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>top_candidates1;
+				if(HW)
+					top_candidates1=searchBaseLayerST_K<false>(currObj, query_data, std::max(ef_, k));
+				else
+					top_candidates1 = searchBaseLayerST<false>(currObj, query_data, std::max(ef_, k));
+
                 top_candidates.swap(top_candidates1);
             }
             std::priority_queue<std::pair<dist_t, labeltype >> results;
