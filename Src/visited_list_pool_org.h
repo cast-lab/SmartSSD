@@ -1,9 +1,7 @@
 #pragma once
 
+#include <mutex>
 #include <string.h>
-#include "hnsw-myDeQ.h"
-
-#define MAX_ELEMENTS 10000
 
 namespace hnswlib {
 	typedef unsigned short int vl_type;
@@ -11,18 +9,13 @@ namespace hnswlib {
 	class VisitedList {
 	public:
 		vl_type curV;
-		vl_type mass[MAX_ELEMENTS];
+		vl_type* mass;
 		unsigned int numelements;
-		VisitedList() {
-			numelements = MAX_ELEMENTS;
-		}
+
 		VisitedList(int numelements1) {
 			curV = -1;
 			numelements = numelements1;
-		}
-
-		void setNumelements(int n1) {
-			numelements = n1;
+			mass = new vl_type[numelements];
 		}
 
 		void reset() {
@@ -33,7 +26,7 @@ namespace hnswlib {
 			}
 		};
 
-		~VisitedList() { cout << "VLpool Done\n"; }
+		~VisitedList() { delete[] mass; }
 	};
 	///////////////////////////////////////////////////////////
 	//
@@ -42,29 +35,26 @@ namespace hnswlib {
 	/////////////////////////////////////////////////////////
 
 	class VisitedListPool {
-		S_Deque<VisitedList*> pool;
+		std::deque<VisitedList*> pool;
+		std::mutex poolguard;
 		int numelements;
-		VisitedList vlist[MAX_ELEMENTS];
+
 	public:
 		VisitedListPool(int initmaxpools, int numelements1) {
 			numelements = numelements1;
-			for (int i = 0; i < initmaxpools; i++) {
-				vlist[i].setNumelements(numelements);
-				pool.s_insertFront(&vlist[i]);
-			}
-
+			for (int i = 0; i < initmaxpools; i++)
+				pool.push_front(new VisitedList(numelements));
 		}
 
 		VisitedList* getFreeVisitedList() {
 			VisitedList* rez;
 			{
-				//				std::unique_lock <std::mutex> lock(poolguard);
-				if (pool.s_getSize() > 0) {
-					rez = pool.s_getFront();
-					pool.s_deleteFront();
+				std::unique_lock <std::mutex> lock(poolguard);
+				if (pool.size() > 0) {
+					rez = pool.front();
+					pool.pop_front();
 				}
 				else {
-					//We should never reach here, as we do static allocation
 					rez = new VisitedList(numelements);
 				}
 			}
@@ -73,15 +63,15 @@ namespace hnswlib {
 		};
 
 		void releaseVisitedList(VisitedList* vl) {
-			//			std::unique_lock <std::mutex> lock(poolguard);
-			pool.s_insertFront(vl);
+			std::unique_lock <std::mutex> lock(poolguard);
+			pool.push_front(vl);
 		};
 
 		~VisitedListPool() {
-			while (pool.s_getSize()) {
-				//				VisitedList *rez = pool.s_getfront();
-				pool.s_deleteFront();
-				//				delete rez;
+			while (pool.size()) {
+				VisitedList* rez = pool.front();
+				pool.pop_front();
+				delete rez;
 			}
 		};
 	};
