@@ -222,7 +222,7 @@ namespace hnswlib {
         L2SpaceI(size_t dim) {
             fstdistfunc_ = L2SqrI;
             dim_ = dim;
-            data_size_ = dim * sizeof(unsigned char);
+            data_size_ = dim * sizeof(unsigned char);			//sizeof(unsigned char) = 1
         }
 
         size_t get_data_size() {

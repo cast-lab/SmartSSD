@@ -20,7 +20,9 @@ class S_Deque {
 	int size;
 public:
 	S_Deque() {
-
+		front = -1;
+		rear = 0;
+		size = 1000;
 	}
 	
 	S_Deque(int size) {
@@ -36,7 +38,6 @@ public:
 			cout << "Overflow\n" << endl;
 			return;
 		}
-		cout << key << endl;
 		// If queue is initially empty 
 		if (front == -1) {
 			front = 0;
@@ -49,7 +50,6 @@ public:
 
 		else // decrement front end by '1' 
 			front = front - 1;
-		cout << front << endl;
 		// insert current element into Deque 
 		sArray[front] = key;
 	}
