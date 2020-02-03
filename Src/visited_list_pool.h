@@ -1,9 +1,8 @@
 #pragma once
-
 #include <string.h>
 #include "hnsw-myDeQ.h"
 
-#define MAX_ELEMENTS 10000
+#define MAX_ELEMENTS 10000		//Same as hnsw-myDeQ MAX 
 
 namespace hnswlib {
 	typedef unsigned short int vl_type;
@@ -58,7 +57,6 @@ namespace hnswlib {
 		VisitedList* getFreeVisitedList() {
 			VisitedList* rez;
 			{
-				//				std::unique_lock <std::mutex> lock(poolguard);
 				if (pool.s_getSize() > 0) {
 					rez = pool.s_getFront();
 					pool.s_deleteFront();
@@ -73,15 +71,12 @@ namespace hnswlib {
 		};
 
 		void releaseVisitedList(VisitedList* vl) {
-			//			std::unique_lock <std::mutex> lock(poolguard);
 			pool.s_insertFront(vl);
 		};
 
 		~VisitedListPool() {
 			while (pool.s_getSize()) {
-				//				VisitedList *rez = pool.s_getfront();
 				pool.s_deleteFront();
-				//				delete rez;
 			}
 		};
 	};

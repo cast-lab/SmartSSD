@@ -1,9 +1,7 @@
-/*
- Samsung implementation of DeQueue using circular array 
-
-*/
-
 #pragma once
+/*
+ Samsung implementation of DeQueue using circular array
+*/
 
 #include<iostream> 
 using namespace std;
@@ -24,7 +22,7 @@ public:
 		rear = 0;
 		size = 1000;
 	}
-	
+
 	S_Deque(int size) {
 		front = -1;
 		rear = 0;
@@ -79,6 +77,7 @@ public:
 	}
 
 	void s_deleteFront() {
+		
 		// check whether Deque is empty or not 
 		if (s_isEmpty()) {
 			cout << "Queue Underflow\n" << endl;

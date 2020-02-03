@@ -1,33 +1,10 @@
 #pragma once
-#ifndef NO_MANUAL_VECTORIZATION
-#ifdef __SSE__
-#define USE_SSE
-#ifdef __AVX__
-#define USE_AVX
-#endif
-#endif
-#endif
 
-#if defined(USE_AVX) || defined(USE_SSE)
-#ifdef _MSC_VER
-#include <intrin.h>
-#include <stdexcept>
-#else
-#include <x86intrin.h>
-#endif
-
-#if defined(__GNUC__)
-#define PORTABLE_ALIGN32 __attribute__((aligned(32)))
-#else
-#define PORTABLE_ALIGN32 __declspec(align(32))
-#endif
-#endif
 
 #include <queue>
-
 #include <string.h>
 
-#define MAX_NUM_NODES 1000
+#define MAX_NUM_NODES 1000		//Same as hnswalg MAX_NUM_NODES
 
 namespace hnswlib {
 
@@ -106,19 +83,12 @@ namespace hnswlib {
 	template<typename dist_t>
 	class AlgorithmInterface {
 	public:
-		virtual void addPoint(void* datapoint, labeltype label) = 0;
-	
-		virtual std::priority_queue<std::pair<dist_t, labeltype >> searchKnn_bf(const void*, size_t, size_t) const = 0;
-		virtual StaticPriorityQueue searchKnn(const void*, size_t, size_t) const  = 0;
-
-		virtual void saveIndex(const std::string& location) = 0;
+		virtual void searchKnn(const void*, size_t, size_t, StaticPriorityQueue &) const = 0;
 		virtual ~AlgorithmInterface() {
 		}
 	};
-
-
 }
+
 #include "space_l2.h"
 #include "space_ip.h"
-#include "bruteforce.h"
 #include "hnswalg.h"
